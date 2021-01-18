@@ -273,9 +273,22 @@ btn_import.onclick = function() {
             return;
         }
         if (file.type == "application/json") {
+            if (!bgImage) {
+                alert("请先导入背景图片")
+                return;
+            }
             let fileReader = new FileReader();
             fileReader.onload = function() {
-                matrix = JSON.parse(fileReader.result);
+                let importData = JSON.parse(fileReader.result);
+                if (
+                    importData.rowCount != matrixRowCount || 
+                    importData.columnCount != matrixColumnCount || 
+                    importData.gridSize != GRID_SPACE
+                ) {
+                    alert("导入的矩阵数据不匹配");
+                    return;
+                }
+                matrix = importData.matrix;
                 drawBG();
                 drawMatrix();
             }
