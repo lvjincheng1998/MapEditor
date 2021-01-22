@@ -256,23 +256,76 @@ btn_revoke.onclick = function() {
 btn_import.onclick = function() {
     let inputTag = document.createElement("input");
     inputTag.setAttribute("type", "file");
+    inputTag.setAttribute("multiple", "");
     inputTag.style.display = "none";
     inputTag.oninput = function() {
         if (inputTag.files.length == 0) {
             return;
         }
-        let file = inputTag.files[0];
-        if (["image/jpeg", "image/png"].indexOf(file.type) > -1) {
-            bgImage = new Image();
-            bgImage.name = file.name.substring(0, file.name.lastIndexOf('.'));
-            bgImage.src = window.URL.createObjectURL(file);
-            bgImage.onload = function() {
-                initMatrix();
-                drawBG();
+        let file0 = inputTag.files[0];
+        if (["image/jpeg", "image/png"].indexOf(file0.type) > -1) {
+            if (inputTag.files.length == 1) {
+                bgImage = new Image();
+                bgImage.name = file0.name.substring(0, file0.name.lastIndexOf('.'));
+                bgImage.src = window.URL.createObjectURL(file0);
+                bgImage.onload = function() {
+                    initMatrix();
+                    drawBG();
+                }
+                return;
+            } else {
+                let canvasTemp = document.createElement("canvas");
+                let ctxTemp = canvasTemp.getContext("2d");
+                let imageTotalCount = 0;
+                let imageLoadCount = 0;
+                let images = [];
+                for (let file of inputTag.files) {
+                    if (["image/jpeg", "image/png"].indexOf(file.type) == -1) continue;
+                    let fileName = file.name.substring(0, file.name.lastIndexOf('.'));
+                    let columnRowStrings = fileName.split('_');
+                    let row = parseInt(columnRowStrings[0]);
+                    let column = parseInt(columnRowStrings[1]);
+                    let image = new Image();
+                    image.src = window.URL.createObjectURL(file);
+                    image.onload = function() {
+                        if (!(images[row] instanceof Array)) images[row] = [];
+                        images[row][column] = image;
+                        imageLoadCount++;
+                        if (imageTotalCount == imageLoadCount) {
+                            let canvasWidth = 0;
+                            let canvasHeight = 0;
+                            for (let r = 0; r < images.length; r++) {
+                                for (let c = 0; c < images[r].length; c++) {
+                                    if (c == 0) canvasHeight += images[r][c].height;
+                                    if (r == 0) canvasWidth += images[r][c].width;
+                                }
+                            }
+                            canvasTemp.width = canvasWidth;
+                            canvasTemp.height = canvasHeight;
+                            let imageX = 0;
+                            let imageY = 0;
+                            for (let r = 0; r < images.length; r++) {
+                                imageX = 0;
+                                for (let c = 0; c < images[r].length; c++) {
+                                    ctxTemp.drawImage(images[r][c], imageX, imageY);
+                                    imageX += images[r][c].width;
+                                    if (c == images[r].length - 1) imageY += images[r][c].height;
+                                }
+                            }
+                            bgImage = new Image();
+                            bgImage.name = "map";
+                            bgImage.src = canvasTemp.toDataURL("image/png");
+                            bgImage.onload = function() {
+                                initMatrix();
+                                drawBG();
+                            }
+                        }
+                    }
+                    imageTotalCount++;
+                }
             }
-            return;
         }
-        if (file.type == "application/json") {
+        if (file0.type == "application/json") {
             if (!bgImage) {
                 alert("请先导入背景图片")
                 return;
@@ -292,7 +345,7 @@ btn_import.onclick = function() {
                 drawBG();
                 drawMatrix();
             }
-            fileReader.readAsText(file);
+            fileReader.readAsText(file0);
             return;
         }
     }
@@ -303,7 +356,14 @@ btn_import.onclick = function() {
 
 btn_export.onclick = () => {
     if (matrix) {
-        let exportData = {matrix: matrix, rowCount: matrixRowCount, columnCount: matrixColumnCount, gridSize: GRID_SPACE};
+        let exportData = {
+            matrix: matrix, 
+            rowCount: matrixRowCount, 
+            columnCount: matrixColumnCount, 
+            width: bgImage.width, 
+            height: bgImage.height,
+            gridSize: GRID_SPACE
+        };
         download(bgImage.name + ".json", JSON.stringify(exportData));
     } else {
         alert("没有地图数据可导出");
