@@ -338,9 +338,10 @@ btn_import.onclick = function() {
                     importData.columnCount != matrixColumnCount || 
                     importData.gridSize != GRID_SPACE
                 ) {
-                    alert("导入的矩阵数据不匹配");
+                    alert("导入的地图数据不匹配");
                     return;
                 }
+                bgImage.name = file0.name.substring(0, file0.name.lastIndexOf('.'));
                 matrix = importData.matrix;
                 drawBG();
                 drawMatrix();
