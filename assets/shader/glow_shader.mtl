@@ -1,0 +1,27 @@
+{
+  "__type__": "cc.Material",
+  "_name": "glow_shader",
+  "_objFlags": 0,
+  "_native": "",
+  "_effectAsset": {
+    "__uuid__": "832a4cb7-b743-4cce-964a-c3569e718b66"
+  },
+  "_techniqueIndex": 0,
+  "_techniqueData": {
+    "0": {
+      "defines": {
+        "USE_TEXTURE": true
+      },
+      "props": {
+        "glow_color": {
+          "__type__": "cc.Color",
+          "r": 0,
+          "g": 223,
+          "b": 255,
+          "a": 255
+        },
+        "scan_radius": 0.02
+      }
+    }
+  }
+}
