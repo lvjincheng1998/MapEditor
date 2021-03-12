@@ -1,5 +1,5 @@
 import EventBox from "../component/EventBox";
-import MapGuider, { JCRectType } from "../component/MapGuider";
+import MapGuider, { MapRectType } from "../component/MapGuider";
 import Movie from "../component/Movie";
 import ResConfig from "../config/ResConfig";
 import { EntityAction, EntityDirection, EntityEvent } from "./EntityEnum";
@@ -154,7 +154,7 @@ export default class Monster extends cc.Component {
                 this.stand();
             }
         }
-        if (MapGuider.ins.getRectType(this.node.x, this.node.y) == JCRectType.BLUE) {
+        if (MapGuider.ins.getRectType(this.node.x, this.node.y) == MapRectType.BLUE) {
             this.node.opacity = 125;
         } else {
             this.node.opacity = 255;

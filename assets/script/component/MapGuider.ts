@@ -1,6 +1,6 @@
 const {ccclass, property} = cc._decorator;
 
-export enum JCRectType { OUT_BOUND = -1, NONE = 0, BLUE = 1, RED = 2 };
+export enum MapRectType { OUT_BOUND = -1, NONE = 0, BLUE = 1, RED = 2 };
 
 @ccclass
 export default class MapGuider extends cc.Component {
@@ -111,14 +111,14 @@ export default class MapGuider extends cc.Component {
         this.node.emit(MapGuider.EventType.CLICK_POSITION, e.getLocation());
     }
 
-    getRectType(x: number, y: number): JCRectType {
-        if (!this.initialized) return JCRectType.OUT_BOUND;
+    getRectType(x: number, y: number): MapRectType {
+        if (!this.initialized) return MapRectType.OUT_BOUND;
         x = x - this.basePoint.x;
         y = this.basePoint.y - y;
         let row = Math.floor(y / this.gridSize);
         let column = Math.floor(x / this.gridSize);
         if (row < 0 || column < 0 || row >= this.rowCount || column >= this.columnCount) {
-            return JCRectType.OUT_BOUND;
+            return MapRectType.OUT_BOUND;
         }
         return this.matrix[row][column];
     }
@@ -133,12 +133,12 @@ export default class MapGuider extends cc.Component {
         }
         let endX = Math.floor((endPoint.x - this.basePoint.x) / this.gridSize);
         let endY = Math.floor((this.basePoint.y - endPoint.y) / this.gridSize);
-        if (this.matrix[endY][endX] == JCRectType.RED) {
+        if (this.matrix[endY][endX] == MapRectType.RED) {
             return outList;
         }
         let startX = Math.floor((startPoint.x - this.basePoint.x) / this.gridSize);
         let startY = Math.floor((this.basePoint.y - startPoint.y) / this.gridSize);
-        let target = Node.calculate(startX, startY, endX, endY, this.matrix);
+        let target = MapNode.calculate(startX, startY, endX, endY, this.matrix);
         while (target) {
             outList.push(target);
             target = target.parent;
@@ -210,48 +210,48 @@ export default class MapGuider extends cc.Component {
 }
 
 /**A*寻路算法的网格节点 */
-class Node {
+class MapNode {
     x: number;
     y: number;
-    parent: Node;
+    parent: MapNode;
     f: number;
     g: number;
     h: number;
-    static startNode: Node;
-    static endNode: Node;
-    static openList: Node[];
-    static closeList: Node[];
+    static startNode: MapNode;
+    static endNode: MapNode;
+    static openList: MapNode[];
+    static closeList: MapNode[];
     static matrix: number[][];
     static row: number;
     static column: number;
 
     static calculate(startX: number, startY: number, endX: number, endY: number, matrix: number[][]) {
-        this.startNode = new Node(startX, startY, null);
-        this.endNode = new Node(endX, endY, null);
+        this.startNode = new MapNode(startX, startY, null);
+        this.endNode = new MapNode(endX, endY, null);
         this.openList = [];
         this.closeList = [];
         this.matrix = matrix;
         this.row = this.matrix.length;
         this.column = this.matrix[0].length;
 
-        let target = Node.startNode;
-        Node.openList.push(target);
+        let target = MapNode.startNode;
+        MapNode.openList.push(target);
         while (target && !target.isEnd()) {
-            Node.openNearbyNodes(-1,0,target);
-            Node.openNearbyNodes(1,0,target);
-            Node.openNearbyNodes(0,-1,target);
-            Node.openNearbyNodes(0,1,target);
-            Node.openNearbyNodes(1,1,target);
-            Node.openNearbyNodes(1,-1,target);
-            Node.openNearbyNodes(-1,1,target);
-            Node.openNearbyNodes(-1,-1,target);
+            MapNode.openNearbyNodes(-1, 0, target);
+            MapNode.openNearbyNodes(1, 0, target);
+            MapNode.openNearbyNodes(0, -1, target);
+            MapNode.openNearbyNodes(0, 1, target);
+            MapNode.openNearbyNodes(1, 1, target);
+            MapNode.openNearbyNodes(1, -1, target);
+            MapNode.openNearbyNodes(-1, 1, target);
+            MapNode.openNearbyNodes(-1, -1, target);
             target.close();
-            target = Node.getBestNode();
+            target = MapNode.getBestNode();
         }
         return target;
     }
 
-    constructor(x: number, y:number, parent: Node) {
+    constructor(x: number, y:number, parent: MapNode) {
         this.x = x;
         this.y = y;
         this.parent = parent;
@@ -262,15 +262,15 @@ class Node {
         } else {
             this.g = 0;
         }
-        if (Node.endNode) {
-            this.h = Math.abs(Node.endNode.x - this.x) + Math.abs(Node.endNode.y - this.y);
+        if (MapNode.endNode) {
+            this.h = Math.abs(MapNode.endNode.x - this.x) + Math.abs(MapNode.endNode.y - this.y);
         } else {
             this.h = 0;
         }
         this.f = this.g + this.h;
     }
 
-    equal(node: Node) {
+    equal(node: MapNode) {
         if (node.x == this.x && node.y == this.y) {
             return true;
         } else {
@@ -284,36 +284,36 @@ class Node {
 
     close() {
         let list = new Array();
-        let index = Node.openList.indexOf(this);
-        for(let i=0; i < Node.openList.length; i++){
+        let index = MapNode.openList.indexOf(this);
+        for(let i=0; i < MapNode.openList.length; i++){
             if(index == i) {
                 continue;
             }
-            list.push(Node.openList[i]);
+            list.push(MapNode.openList[i]);
         }
-        Node.openList = list;
-        Node.closeList.push(this);
+        MapNode.openList = list;
+        MapNode.closeList.push(this);
     }
 
     getFromOpenList() {
-        for(let i = 0; i < Node.openList.length; i++){
-            if (Node.openList[i].equal(this)) {
-                return Node.openList[i];
+        for(let i = 0; i < MapNode.openList.length; i++){
+            if (MapNode.openList[i].equal(this)) {
+                return MapNode.openList[i];
             }
         }
         return null;
     }
 
     getFromCloseList() {
-        for(let i = 0; i < Node.closeList.length; i++){
-            if (Node.closeList[i].equal(this)) {
-                return Node.closeList[i];
+        for(let i = 0; i < MapNode.closeList.length; i++){
+            if (MapNode.closeList[i].equal(this)) {
+                return MapNode.closeList[i];
             }
         }
         return null;
     }
 
-    update(node: Node) {
+    update(node: MapNode) {
         this.x = node.x;
         this.y = node.y;
         this.parent = node.parent;
@@ -323,46 +323,46 @@ class Node {
     }
 
     isEnd() {
-        if (this.equal(Node.endNode)) {
+        if (this.equal(MapNode.endNode)) {
             return true;
         } else {
             return false;
         }
     }
 
-    static openNearbyNodes(offsetX: number, offsetY: number, node: Node) {
+    static openNearbyNodes(offsetX: number, offsetY: number, node: MapNode) {
         let x = node.x + offsetX;
         let y = node.y + offsetY;
-        if (x < 0 ||x > Node.column-1) {
+        if (x < 0 ||x > MapNode.column-1) {
             return;
         }
-        if (y < 0 || y > Node.row - 1) {
+        if (y < 0 || y > MapNode.row - 1) {
             return;
         }
-        if (Node.matrix[y][x] == JCRectType.RED) {
+        if (MapNode.matrix[y][x] == MapRectType.RED) {
             return;
         }
         if (offsetX != 0 && offsetY != 0) {
-            if (Node.matrix[node.y][node.x + offsetX] == JCRectType.RED || Node.matrix[node.y + offsetY][node.x] == JCRectType.RED) {
+            if (MapNode.matrix[node.y][node.x + offsetX] == MapRectType.RED || MapNode.matrix[node.y + offsetY][node.x] == MapRectType.RED) {
                 return;
             }
         }
-        let newNode = new Node(x,y,node);
+        let newNode = new MapNode(x,y,node);
         let openNode = newNode.getFromOpenList();
         let closeNode = newNode.getFromCloseList();
         if (!openNode && !closeNode) {
-            Node.openList.push(newNode);
+            MapNode.openList.push(newNode);
         } else if(openNode && newNode.compareTo(openNode) < 0) {
             openNode.update(newNode);
         }
     }
 
     static getBestNode() {
-        Node.openList.sort((a,b) => {
+        MapNode.openList.sort((a,b) => {
             return a.compareTo(b);
         });
-        if (Node.openList.length > 0) {
-            return Node.openList[0];
+        if (MapNode.openList.length > 0) {
+            return MapNode.openList[0];
         } else {
             return null;
         }
