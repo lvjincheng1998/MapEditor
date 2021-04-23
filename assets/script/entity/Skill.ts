@@ -99,7 +99,7 @@ export default class Skill extends cc.Component {
             this.node.zIndex += direction < EntityDirection.LEFT_DOWN ? -1: 1;
         }
         if (typeof resInfo.rotate == "number") {
-            this.node.rotation = resInfo.direction == direction ? resInfo.rotate : -resInfo.rotate;
+            this.node.angle = -(resInfo.direction == direction ? resInfo.rotate : -resInfo.rotate);
         }
         this.load(resInfo.name);
     }

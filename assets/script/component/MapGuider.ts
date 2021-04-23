@@ -1,51 +1,81 @@
 const {ccclass, property} = cc._decorator;
 
-export enum MapRectType { OUT_BOUND = -1, NONE = 0, BLUE = 1, RED = 2 };
+/**地图矩阵中的矩形类型 */
+export enum MapRectType { 
+    /**超出边界 */
+    OUT_BOUND = -1, 
+    /**常规 */
+    NONE = 0, 
+    /**透明 */
+    BLUE = 1, 
+    /**阻塞 */
+    RED = 2
+};
 
+/**
+ * 地图指导组件
+ * @description 地图加载、渲染、寻路
+ * @author JC
+ */
 @ccclass
 export default class MapGuider extends cc.Component {
+    /**地图资源加载路径 */
     @property
-    path: string = "";
+    private path: string = "";
 
-    matrix: number[][];
-    rowCount: number;
-    columnCount: number;
-    gridSize: number;
-    mapSize: cc.Size;
-    basePoint: cc.Vec2;
+    /**地图矩阵数据 */
+    private matrix: number[][];
+    /**地图矩阵行数 */
+    private rowCount: number;
+    /**地图矩阵列数 */
+    private columnCount: number;
+    /**地图网格单元大小 */
+    private gridSize: number;
+    /**地图宽高 */
+    private mapSize: cc.Size;
+    /**地图基准点（左上角） */
+    public basePoint: cc.Vec2;
 
-    imageRootNode: cc.Node = null;
-    initialized: boolean = false;
+    /**地图渲染的根节点 */
+    private imageRootNode: cc.Node = null;
+    /**地图是否加载并渲染完成 */
+    private initialized: boolean = false;
 
-    static EventType = {
+    /**地图事件 */
+    public static EventType = {
         LOADED: "LOADED",
         CLICK_POSITION: "CLICK_POSITION"
     }
-    static ins: MapGuider = null;
 
-    onLoad() {
+    /**脚本实例 */
+    public static ins: MapGuider = null;
+
+    public onLoad() {
         MapGuider.ins = this;
 
         this.load();
     }
 
-    onDestroy() {
+    public onDestroy() {
         if (MapGuider.ins == this) {
             MapGuider.ins = null;
         }
     }
 
-    load() {
+    public lateUpdate() {
+        this.updateCamera();
+    }
+
+    private load() {
         if (!this.imageRootNode) {
             this.imageRootNode = new cc.Node("iamge_root");
             this.node.addChild(this.imageRootNode);
         }
-        this.imageRootNode.off(cc.Node.EventType.TOUCH_END, this._emitClickPosition, this);
+        this.imageRootNode.off(cc.Node.EventType.TOUCH_END, this.emitClickPosition, this);
 
         cc.resources.loadDir(this.path, cc.Asset, (error, assets) => {
             if (error) {
-                cc.error(error);
-                return;
+                return cc.error(error);
             }
             let imageAssets = [];
             let jsonAsset = null;
@@ -56,11 +86,11 @@ export default class MapGuider extends cc.Component {
                     jsonAsset = asset;
                 }
             }
-            this._loadComplete(imageAssets, jsonAsset);
+            this.loadComplete(imageAssets, jsonAsset);
         });
     }
 
-    private _loadComplete(imageAssets: cc.SpriteFrame | cc.SpriteFrame[], jsonAsset: cc.JsonAsset) {
+    private loadComplete(imageAssets: cc.SpriteFrame | cc.SpriteFrame[], jsonAsset: cc.JsonAsset) {
         if (!imageAssets || !jsonAsset) return;
 
         this.matrix = jsonAsset.json.matrix;
@@ -100,18 +130,18 @@ export default class MapGuider extends cc.Component {
             this.imageRootNode.addComponent(cc.Sprite).spriteFrame = imageAssets as cc.SpriteFrame;
         }
 
-        this.imageRootNode.on(cc.Node.EventType.TOUCH_END, this._emitClickPosition, this);
+        this.imageRootNode.on(cc.Node.EventType.TOUCH_END, this.emitClickPosition, this);
 
         this.initialized = true;
 
         this.node.emit(MapGuider.EventType.LOADED);
     }  
 
-    private _emitClickPosition(e: cc.Event.EventTouch) {
+    private emitClickPosition(e: cc.Event.EventTouch) {
         this.node.emit(MapGuider.EventType.CLICK_POSITION, e.getLocation());
     }
 
-    getRectType(x: number, y: number): MapRectType {
+    public getRectType(x: number, y: number): MapRectType {
         if (!this.initialized) return MapRectType.OUT_BOUND;
         x = x - this.basePoint.x;
         y = this.basePoint.y - y;
@@ -123,7 +153,7 @@ export default class MapGuider extends cc.Component {
         return this.matrix[row][column];
     }
 
-    getPath(startPoint: cc.Vec2, endPoint: cc.Vec2): {x: number, y: number}[] {
+    public getPath(startPoint: cc.Vec2, endPoint: cc.Vec2): {x: number, y: number}[] {
         let outList = [];
         if (!this.initialized) {
             return outList;
@@ -159,7 +189,7 @@ export default class MapGuider extends cc.Component {
         return outList;
     }
 
-    static getNextPosition(position: cc.Vec2, path: {x: number, y: number}[], speed: number, dt: number) {
+    public static getNextPosition(position: cc.Vec2, path: {x: number, y: number}[], speed: number, dt: number) {
         let dx = speed * dt;
         while (true) {
             let point = path[path.length - 1];
@@ -186,7 +216,7 @@ export default class MapGuider extends cc.Component {
         this.cameraTarget = target;
     }
 
-    public updateCamera() {
+    private updateCamera() {
         if (!this.cameraNode || !this.cameraNode.isValid) return;
         if (!this.cameraTarget || !this.cameraTarget.isValid) return;
         if (!MapGuider.ins || !MapGuider.ins.initialized) return;
@@ -211,66 +241,30 @@ export default class MapGuider extends cc.Component {
 
 /**A*寻路算法的网格节点 */
 class MapNode {
-    x: number;
-    y: number;
-    parent: MapNode;
-    f: number;
-    g: number;
-    h: number;
-    static startNode: MapNode;
-    static endNode: MapNode;
-    static openList: MapNode[];
-    static closeList: MapNode[];
-    static matrix: number[][];
-    static row: number;
-    static column: number;
-
-    static calculate(startX: number, startY: number, endX: number, endY: number, matrix: number[][]) {
-        this.startNode = new MapNode(startX, startY, null);
-        this.endNode = new MapNode(endX, endY, null);
-        this.openList = [];
-        this.closeList = [];
-        this.matrix = matrix;
-        this.row = this.matrix.length;
-        this.column = this.matrix[0].length;
-
-        let target = MapNode.startNode;
-        MapNode.openList.push(target);
-        while (target && !target.isEnd()) {
-            MapNode.openNearbyNodes(-1, 0, target);
-            MapNode.openNearbyNodes(1, 0, target);
-            MapNode.openNearbyNodes(0, -1, target);
-            MapNode.openNearbyNodes(0, 1, target);
-            MapNode.openNearbyNodes(1, 1, target);
-            MapNode.openNearbyNodes(1, -1, target);
-            MapNode.openNearbyNodes(-1, 1, target);
-            MapNode.openNearbyNodes(-1, -1, target);
-            target.close();
-            target = MapNode.getBestNode();
-        }
-        return target;
-    }
+    public parent: MapNode;
+    private x: number;
+    private y: number;
+    private f: number;
+    private g: number;
+    private h: number;
+    private static startNode: MapNode;
+    private static endNode: MapNode;
+    private static openList: MapNode[];
+    private static closeList: MapNode[];
+    private static matrix: number[][];
+    private static row: number;
+    private static column: number;
 
     constructor(x: number, y:number, parent: MapNode) {
+        this.parent = parent;
         this.x = x;
         this.y = y;
-        this.parent = parent;
-        if (this.parent) {
-            this.g = this.parent.g + Math.sqrt(
-                (x - parent.x) * (x - parent.x) + 
-                (y - parent.y) * (y - parent.y));
-        } else {
-            this.g = 0;
-        }
-        if (MapNode.endNode) {
-            this.h = Math.abs(MapNode.endNode.x - this.x) + Math.abs(MapNode.endNode.y - this.y);
-        } else {
-            this.h = 0;
-        }
+        this.g = this.parent ? this.parent.g + Math.sqrt((x - parent.x) * (x - parent.x) + (y - parent.y) * (y - parent.y)) : 0;
+        this.h = MapNode.endNode ? Math.abs(MapNode.endNode.x - this.x) + Math.abs(MapNode.endNode.y - this.y) : 0;
         this.f = this.g + this.h;
     }
 
-    equal(node: MapNode) {
+    private equal(node: MapNode) {
         if (node.x == this.x && node.y == this.y) {
             return true;
         } else {
@@ -278,11 +272,11 @@ class MapNode {
         }
     }
 
-    compareTo(node) {
+    private compareTo(node) {
         return this.f - node.f;
     }
 
-    close() {
+    private close() {
         let list = new Array();
         let index = MapNode.openList.indexOf(this);
         for(let i=0; i < MapNode.openList.length; i++){
@@ -295,7 +289,7 @@ class MapNode {
         MapNode.closeList.push(this);
     }
 
-    getFromOpenList() {
+    private getFromOpenList() {
         for(let i = 0; i < MapNode.openList.length; i++){
             if (MapNode.openList[i].equal(this)) {
                 return MapNode.openList[i];
@@ -304,7 +298,7 @@ class MapNode {
         return null;
     }
 
-    getFromCloseList() {
+    private getFromCloseList() {
         for(let i = 0; i < MapNode.closeList.length; i++){
             if (MapNode.closeList[i].equal(this)) {
                 return MapNode.closeList[i];
@@ -313,16 +307,16 @@ class MapNode {
         return null;
     }
 
-    update(node: MapNode) {
+    private update(node: MapNode) {
+        this.parent = node.parent;
         this.x = node.x;
         this.y = node.y;
-        this.parent = node.parent;
         this.f = node.y;
         this.g = node.g;
         this.h = node.h;
     }
 
-    isEnd() {
+    private isEnd() {
         if (this.equal(MapNode.endNode)) {
             return true;
         } else {
@@ -330,7 +324,7 @@ class MapNode {
         }
     }
 
-    static openNearbyNodes(offsetX: number, offsetY: number, node: MapNode) {
+    private static openNearbyNodes(offsetX: number, offsetY: number, node: MapNode) {
         let x = node.x + offsetX;
         let y = node.y + offsetY;
         if (x < 0 ||x > MapNode.column-1) {
@@ -357,7 +351,7 @@ class MapNode {
         }
     }
 
-    static getBestNode() {
+    private static getBestNode() {
         MapNode.openList.sort((a,b) => {
             return a.compareTo(b);
         });
@@ -366,5 +360,31 @@ class MapNode {
         } else {
             return null;
         }
+    }
+
+    public static calculate(startX: number, startY: number, endX: number, endY: number, matrix: number[][]) {
+        this.startNode = new MapNode(startX, startY, null);
+        this.endNode = new MapNode(endX, endY, null);
+        this.openList = [];
+        this.closeList = [];
+        this.matrix = matrix;
+        this.row = this.matrix.length;
+        this.column = this.matrix[0].length;
+
+        let target = MapNode.startNode;
+        MapNode.openList.push(target);
+        while (target && !target.isEnd()) {
+            MapNode.openNearbyNodes(-1, 0, target);
+            MapNode.openNearbyNodes(1, 0, target);
+            MapNode.openNearbyNodes(0, -1, target);
+            MapNode.openNearbyNodes(0, 1, target);
+            MapNode.openNearbyNodes(1, 1, target);
+            MapNode.openNearbyNodes(1, -1, target);
+            MapNode.openNearbyNodes(-1, 1, target);
+            MapNode.openNearbyNodes(-1, -1, target);
+            target.close();
+            target = MapNode.getBestNode();
+        }
+        return target;
     }
 }
