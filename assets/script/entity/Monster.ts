@@ -49,7 +49,6 @@ export default class Monster extends cc.Component {
         if (data.position) {
             monster.basePoint = data.position;
             node.setPosition(data.position);
-            MapGuider.ins.updateCamera();
         }
         if (data.parent) {
             data.parent.addChild(node);

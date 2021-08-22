@@ -56,7 +56,6 @@ export default class Role extends cc.Component {
         }
         if (data.position) {
             node.setPosition(data.position);
-            MapGuider.ins.updateCamera();
         }
         if (data.parent) {
             data.parent.addChild(node);
@@ -146,7 +145,6 @@ export default class Role extends cc.Component {
         if (MapGuider.ins.basePoint) {
             this.node.zIndex = MapGuider.ins.basePoint.y - this.node.y;
         }
-        MapGuider.ins.updateCamera();
     }
 
     load() {

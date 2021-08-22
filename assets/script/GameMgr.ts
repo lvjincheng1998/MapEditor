@@ -59,7 +59,7 @@ export default class GameMgr extends cc.Component {
         
         MapGuider.ins.initCamera(cc.find("Canvas/Main Camera"), this.role.node);
 
-        MapGuider.ins.node.on(MapGuider.EventType.CLICK_POSITION, (endLocation: cc.Vec2) => {
+        MapGuider.ins.node.on(MapGuider.EventType.ClickPoint, (endLocation: cc.Vec2) => {
             let centerLocation = cc.v2(cc.winSize.width / 2, cc.winSize.height / 2);
             let vec = endLocation.sub(centerLocation);
             let endPos = cc.Camera.cameras[0].node.getPosition().add(vec);

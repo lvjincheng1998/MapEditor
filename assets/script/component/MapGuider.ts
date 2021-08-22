@@ -43,8 +43,8 @@ export default class MapGuider extends cc.Component {
 
     /**地图事件 */
     public static EventType = {
-        LOADED: "LOADED",
-        CLICK_POSITION: "CLICK_POSITION"
+        Loaded: "Loaded",
+        ClickPoint: "ClickPoint"
     }
 
     /**脚本实例 */
@@ -68,7 +68,7 @@ export default class MapGuider extends cc.Component {
 
     private load() {
         if (!this.imageRootNode) {
-            this.imageRootNode = new cc.Node("iamge_root");
+            this.imageRootNode = new cc.Node("image_root");
             this.node.addChild(this.imageRootNode);
         }
         this.imageRootNode.off(cc.Node.EventType.TOUCH_END, this.emitClickPosition, this);
@@ -90,8 +90,8 @@ export default class MapGuider extends cc.Component {
         });
     }
 
-    private loadComplete(imageAssets: cc.SpriteFrame | cc.SpriteFrame[], jsonAsset: cc.JsonAsset) {
-        if (!imageAssets || !jsonAsset) return;
+    private loadComplete(imageAssets: cc.SpriteFrame[], jsonAsset: cc.JsonAsset) {
+        if (imageAssets.length == 0 || !jsonAsset) return;
 
         this.matrix = jsonAsset.json.matrix;
         this.rowCount = jsonAsset.json.rowCount;
@@ -102,43 +102,38 @@ export default class MapGuider extends cc.Component {
         
         this.imageRootNode.setContentSize(this.mapSize);
 
-        if (imageAssets instanceof Array) {    
-            let imageNodes: cc.Node[][] = [[]];
-            for (let imageAsset of imageAssets) {
-                let rowColumnStrings = imageAsset.name.split("_");
-                let row = parseInt(rowColumnStrings[0]);
-                let column = parseInt(rowColumnStrings[1]);
-                let imageNode = new cc.Node(imageAsset.name);
-                imageNode.setAnchorPoint(0, 1);
-                imageNode.addComponent(cc.Sprite).spriteFrame = imageAsset;
-                this.imageRootNode.addChild(imageNode);
-                if (!(imageNodes[row] instanceof Array)) imageNodes[row] = [];
-                imageNodes[row][column] = imageNode;
-            }
+        let imageNodes: cc.Node[][] = [[]];
+        for (let imageAsset of imageAssets) {
+            let rowColumnStrings = imageAsset.name.split("_");
+            let row = parseInt(rowColumnStrings[0]);
+            let column = parseInt(rowColumnStrings[1]);
+            let imageNode = new cc.Node(imageAsset.name);
+            imageNode.setAnchorPoint(0, 1);
+            imageNode.addComponent(cc.Sprite).spriteFrame = imageAsset;
+            this.imageRootNode.addChild(imageNode);
+            if (!(imageNodes[row] instanceof Array)) imageNodes[row] = [];
+            imageNodes[row][column] = imageNode;
+        }
+        let y = 0;
+        for (let r = 0; r < imageNodes.length; r++) {
             let x = 0;
-            let y = 0;
-            for (let r = 0; r < imageNodes.length; r++) {
-                x = 0;
-                for (let c = 0; c < imageNodes[r].length; c++) {
-                    let image = imageNodes[r][c];
-                    image.setPosition(this.basePoint.add(cc.v2(x, y)))
-                    x += image.width;
-                    if (c == imageNodes[r].length - 1) y -= image.height;
-                }
+            for (let c = 0; c < imageNodes[r].length; c++) {
+                let image = imageNodes[r][c];
+                image.setPosition(this.basePoint.add(cc.v2(x, y)))
+                x += image.width;
+                if (c == imageNodes[r].length - 1) y -= image.height;
             }
-        } else {
-            this.imageRootNode.addComponent(cc.Sprite).spriteFrame = imageAssets as cc.SpriteFrame;
         }
 
         this.imageRootNode.on(cc.Node.EventType.TOUCH_END, this.emitClickPosition, this);
 
         this.initialized = true;
 
-        this.node.emit(MapGuider.EventType.LOADED);
+        this.node.emit(MapGuider.EventType.Loaded);
     }  
 
     private emitClickPosition(e: cc.Event.EventTouch) {
-        this.node.emit(MapGuider.EventType.CLICK_POSITION, e.getLocation());
+        this.node.emit(MapGuider.EventType.ClickPoint, e.getLocation());
     }
 
     public getRectType(x: number, y: number): MapRectType {

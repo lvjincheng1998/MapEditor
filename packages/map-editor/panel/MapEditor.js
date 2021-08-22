@@ -1,9 +1,10 @@
 const GRID_SPACE = 30;
 const CANVAS_EXTRA_VIEW = 300;
-const RGB_BLACK = "rgb(0, 0, 0)";
-const RGB_GREEN = "rgb(0, 255, 0)";
-const RGBA_BLUE = "rgba(0, 0, 255, 0.5)";
-const RGBA_RED = "rgba(255, 0, 0, 0.5)";
+
+const RGB_BLACK = "rgb(0,0,0)";
+const RGB_GREEN = "rgb(0,255,0)";
+const RGBA_BLUE = "rgba(0,0,255,0.5)";
+const RGBA_RED = "rgba(255,0,0,0.5)";
 
 const RECT_TYPE = {
     NONE: 0,
@@ -179,16 +180,6 @@ function revoke() {
     }
 }
 
-function download(filename, text) {
-    let aTag = document.createElement("a");
-    aTag.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text));
-    aTag.setAttribute("download", filename);
-    aTag.style.display = "none";
-    document.body.appendChild(aTag);
-    aTag.click();
-    document.body.removeChild(aTag);
-}
-
 window.onresize = function() {
     drawBG();
     drawMatrix();
@@ -197,8 +188,8 @@ window.onresize = function() {
 window.oncontextmenu = function(e) {
     e.preventDefault();
     menu_right.style.display = "block";
-    menu_right.style.left = e.offsetX+"px";
-    menu_right.style.top = e.offsetY+"px"; 
+    menu_right.style.left = e.offsetX + "px";
+    menu_right.style.top = e.offsetY + "px"; 
 }
 
 window.onclick = function() { 
@@ -252,14 +243,14 @@ btn_revoke.onclick = function() {
     revoke();
 }
 
-function setMapData(imageBase64Matrix, rowMax, colMax, mapJson) {
+function setMapData(imageBase64Matrix, rowCount, colCount, mapJson) {
     let canvasTemp = document.createElement("canvas");
     let ctxTemp = canvasTemp.getContext("2d");
     let imageTotalCount = 0;
     let imageLoadCount = 0;
     let images = [];
-    for (let row = 0; row < rowMax; row++) {
-        for (let col = 0; col < colMax; col++) {
+    for (let row = 0; row < rowCount; row++) {
+        for (let col = 0; col < colCount; col++) {
             let imageBase64 = imageBase64Matrix[row][col];
             let image = new Image();
             image.src = imageBase64;
@@ -280,10 +271,9 @@ function setMapData(imageBase64Matrix, rowMax, colMax, mapJson) {
                     }
                     canvasTemp.width = canvasWidth;
                     canvasTemp.height = canvasHeight;
-                    let imageX = 0;
                     let imageY = 0;
                     for (let r = 0; r < images.length; r++) {
-                        imageX = 0;
+                        let imageX = 0;
                         for (let c = 0; c < images[r].length; c++) {
                             ctxTemp.drawImage(images[r][c], imageX, imageY);
                             imageX += images[r][c].width;

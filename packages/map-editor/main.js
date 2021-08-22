@@ -18,13 +18,13 @@ module.exports = {
       if (Editor.Panel.findWindow("map-editor")) {
        return; 
       }
-      // init 
+
       this.mapDirURL = null;
       this.mapJson = null;
       this.imageBase64Matrix = null;
-      this.rowMax = null;
-      this.colMax = null;
-      // load
+      this.rowCount = null;
+      this.colCount = null;
+
       let uuids = Editor.Selection.curSelection("asset");
       if (uuids.length != 1) {
         Editor.warn("请选择一个地图资源文件夹");
@@ -39,8 +39,8 @@ module.exports = {
       let assetPath = assetInfo.path;
       let childFiles = FileStream.readdirSync(assetPath);
       let imageBase64Matrix = [];
-      let rowMax = 0;
-      let colMax = 0;
+      let rowCount = 0;
+      let colCount = 0;
       for (let fileName of childFiles) {
         if (fileName.endsWith(".meta")) {
           continue;
@@ -61,15 +61,15 @@ module.exports = {
         if (!imageType) {
           continue;
         }
-        let rowColStr = fileName.substring(0, fileName.indexOf("."));
+        let rowColStr = fileName.substring(0, fileName.lastIndexOf("."));
         let rowColStrs = rowColStr.split("_");
         let rowIndex = parseInt(rowColStrs[0]);
         let colIndex = parseInt(rowColStrs[1]);
-        if (rowIndex + 1 > rowMax) {
-          rowMax = rowIndex + 1;
+        if (rowIndex >= rowCount) {
+          rowCount = rowIndex + 1;
         }
-        if (colIndex + 1 > colMax) {
-          colMax = colIndex + 1;
+        if (colIndex >= colCount) {
+          colCount = colIndex + 1;
         }
         if (!imageBase64Matrix[rowIndex]) {
           imageBase64Matrix[rowIndex] = [];
@@ -80,9 +80,9 @@ module.exports = {
         imageBase64Matrix[rowIndex][colIndex] = iamgeBase64;
       }
       this.imageBase64Matrix = imageBase64Matrix;
-      this.rowMax = rowMax;
-      this.colMax = colMax;
-      if (this.rowMax <= 0 || this.colMax <= 0) {
+      this.rowCount = rowCount;
+      this.colCount = colCount;
+      if (this.rowCount <= 0 || this.colCount <= 0) {
         Editor.warn(
           "要求目标文件夹内至少存在一张规范命名的图片\n" + 
           "格式: 行_列.jpg 或 png\n" + 
@@ -93,7 +93,7 @@ module.exports = {
       Editor.Panel.open("map-editor");
     },
     "read-res" () {
-      Editor.Ipc.sendToPanel("map-editor", "map-editor:import-res", [this.imageBase64Matrix, this.rowMax, this.colMax, this.mapJson]);
+      Editor.Ipc.sendToPanel("map-editor", "map-editor:import-res", [this.imageBase64Matrix, this.rowCount, this.colCount, this.mapJson]);
     },
     "save-map" (event, data) {
       let url = this.mapDirURL + "/map.json";
