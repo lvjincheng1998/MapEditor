@@ -77,7 +77,7 @@ export default class Role extends cc.Component {
         if (!this.attacking && !this.hurting && !this.dead) {
             if (this.movePath.length > 0) {
                 this.moveing = true;
-                let nextPosition = MapGuider.getNextPosition(this.node.getPosition(), this.movePath, 280, dt);
+                let nextPosition = MapGuider.nextPosition(this.node.getPosition(), this.movePath, 280, dt);
                 let direction = null;
                 let deltaX = nextPosition.x - this.node.x;
                 let deltaY = nextPosition.y - this.node.y;
